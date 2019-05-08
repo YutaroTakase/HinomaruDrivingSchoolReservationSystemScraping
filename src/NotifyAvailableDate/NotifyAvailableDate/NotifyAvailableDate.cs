@@ -36,7 +36,7 @@ namespace NotifyAvailableDate
         }
 
         [FunctionName("NotifyAvailableDate")]
-        public static void Run([TimerTrigger("0 0 9-24/1 * * *")]TimerInfo myTimer, ILogger log)
+        public static void Run([TimerTrigger("0 */10 9-23 * * *")]TimerInfo myTimer, ILogger log)
         {
             try
             {
@@ -60,7 +60,7 @@ namespace NotifyAvailableDate
         {
             HttpResponseMessage response = await Login();
 
-            var loopCount = 3;
+            var loopCount = 2;
 
             var bookables = new List<Bookable>();
 
