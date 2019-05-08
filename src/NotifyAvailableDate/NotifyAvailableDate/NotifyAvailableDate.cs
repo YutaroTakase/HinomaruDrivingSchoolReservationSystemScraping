@@ -60,7 +60,7 @@ namespace NotifyAvailableDate
         {
             HttpResponseMessage response = await Login();
 
-            var loopCount = 3;
+            var loopCount = 2;
 
             var bookables = new List<Bookable>();
 
