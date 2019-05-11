@@ -36,7 +36,7 @@ namespace NotifyAvailableDate
         }
 
         [FunctionName("NotifyAvailableDate")]
-        public static void Run([TimerTrigger("0 */10 0-14 * * *")]TimerInfo myTimer, ILogger log)
+        public static void Run([TimerTrigger("0 */10 0-16 * * *")]TimerInfo myTimer, ILogger log)
         {
             try
             {
