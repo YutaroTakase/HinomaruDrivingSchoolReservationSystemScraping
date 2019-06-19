@@ -16,119 +16,119 @@ using Newtonsoft.Json;
 
 namespace NotifyAvailableDate
 {
-    public static class NotifyAvailableDate
-    {
-        private static HttpClient client;
-        private static readonly CookieContainer cookie = new CookieContainer();
-        private static readonly HtmlParser parser = new HtmlParser();
-        private static readonly List<string> targetColor = new List<string>() { "#FF0000", "#0000FF" };
+	public static class NotifyAvailableDate
+	{
+		private static HttpClient client;
+		private static readonly CookieContainer cookie = new CookieContainer();
+		private static readonly HtmlParser parser = new HtmlParser();
+		private static readonly List<string> targetColor = new List<string>() { "#FF0000", "#0000FF" };
 
-        private static IConfigurationRoot Configuration { get; }
+		private static IConfigurationRoot Configuration { get; }
 
-        static NotifyAvailableDate()
-        {
-            IConfigurationBuilder builder = new ConfigurationBuilder()
-                            .AddJsonFile("local.settings.json", true)
-                            .AddEnvironmentVariables();
+		static NotifyAvailableDate()
+		{
+			IConfigurationBuilder builder = new ConfigurationBuilder()
+							.AddJsonFile("local.settings.json", true)
+							.AddEnvironmentVariables();
 
-            Configuration = builder.Build();
-        }
+			Configuration = builder.Build();
+		}
 
-        [FunctionName("NotifyAvailableDate")]
-        public static void Run([TimerTrigger("0 */10 0-16 * * *")]TimerInfo myTimer, ILogger log)
-        {
-            try
-            {
-                log.LogInformation("function start");
+		[FunctionName("NotifyAvailableDate")]
+		public static void Run([TimerTrigger("0 */10 0-16 * * *")]TimerInfo myTimer, ILogger log)
+		{
+			try
+			{
+				log.LogInformation("function start");
 
-                InitializeHttpClient();
+				InitializeHttpClient();
 
-                Execute().Wait();
-            }
-            catch (Exception ex)
-            {
-                log.LogCritical(ex, "exception");
-            }
-            finally
-            {
-                log.LogInformation("function end");
-            }
-        }
+				Execute().Wait();
+			}
+			catch (Exception ex)
+			{
+				log.LogCritical(ex, ex.ToString());
+			}
+			finally
+			{
+				log.LogInformation("function end");
+			}
+		}
 
-        private static async Task Execute()
-        {
-            HttpResponseMessage response = await Login();
+		private static async Task Execute()
+		{
+			HttpResponseMessage response = await Login();
 
-            var loopCount = 2;
+			var loopCount = 2;
 
-            var bookables = new List<Bookable>();
+			var bookables = new List<Bookable>();
 
-            for (int i = 1; i <= loopCount; i++)
-            {
-                Thread.Sleep(1000);
+			for (int i = 1; i <= loopCount; i++)
+			{
+				Thread.Sleep(1000);
 
-                Stream stream = await response.Content.ReadAsStreamAsync();
+				Stream stream = await response.Content.ReadAsStreamAsync();
 
-                IHtmlDocument document = await parser.ParseDocumentAsync(stream);
+				IHtmlDocument document = await parser.ParseDocumentAsync(stream);
 
-                IEnumerable<Bookable> result = Parse(document);
+				IEnumerable<Bookable> result = Parse(document);
 
-                bookables.AddRange(result);
+				bookables.AddRange(result);
 
-                if (i != loopCount)
-                {
-                    response = await NextPage(document);
-                }
-            }
+				if (i != loopCount)
+				{
+					response = await NextPage(document);
+				}
+			}
 
-            if (bookables.Count > 0)
-            {
-                await Notice(bookables);
-            }
-        }
+			if (bookables.Count > 0)
+			{
+				await Notice(bookables);
+			}
+		}
 
-        private static async Task<HttpResponseMessage> Login()
-        {
-            var parameter = await new FormUrlEncodedContent(new Dictionary<string, string>() { { "abc", "Mudjt+z0xsM+brGQYS+1OA==" }, }).ReadAsStringAsync();
+		private static async Task<HttpResponseMessage> Login()
+		{
+			var parameter = await new FormUrlEncodedContent(new Dictionary<string, string>() { { "abc", "Mudjt+z0xsM+brGQYS+1OA==" }, }).ReadAsStringAsync();
 
-            HttpResponseMessage response = await client.GetAsync($"/el25/pc/index.action?{parameter}");
+			HttpResponseMessage response = await client.GetAsync($"/el25/pc/index.action?{parameter}");
 
-            Stream stream = await response.Content.ReadAsStreamAsync();
+			Stream stream = await response.Content.ReadAsStreamAsync();
 
-            IHtmlDocument document = await parser.ParseDocumentAsync(stream);
+			IHtmlDocument document = await parser.ParseDocumentAsync(stream);
 
-            IHtmlCollection<IElement> hiddenFilelds = document.QuerySelector("#p01aForm").QuerySelectorAll("input[type=hidden]");
+			IHtmlCollection<IElement> hiddenFilelds = document.QuerySelector("#p01aForm").QuerySelectorAll("input[type=hidden]");
 
-            var formDatas = hiddenFilelds.ToDictionary(x => x.GetAttribute("name"), y => y.GetAttribute("value"));
-            formDatas.Add("b.studentId", Configuration["LoginId"]);
-            formDatas.Add("b.password", Configuration["Password"]);
-            formDatas.Add("method:doLogin", "");
+			var formDatas = hiddenFilelds.ToDictionary(x => x.GetAttribute("name"), y => y.GetAttribute("value"));
+			formDatas.Add("b.studentId", Configuration["LoginId"]);
+			formDatas.Add("b.password", Configuration["Password"]);
+			formDatas.Add("method:doLogin", "");
 
-            return await client.PostAsync("el25/pc/p01a.action", new FormUrlEncodedContent(formDatas));
-        }
+			return await client.PostAsync("el25/pc/p01a.action", new FormUrlEncodedContent(formDatas));
+		}
 
-        private static async Task<HttpResponseMessage> NextPage(IHtmlDocument document)
-        {
-            IHtmlCollection<IElement> hiddenFilelds = document.QuerySelector("#formId").QuerySelectorAll("input[type=hidden]");
+		private static async Task<HttpResponseMessage> NextPage(IHtmlDocument document)
+		{
+			IHtmlCollection<IElement> hiddenFilelds = document.QuerySelector("#formId").QuerySelectorAll("input[type=hidden]");
 
-            var formDatas = hiddenFilelds.ToDictionary(x => x.GetAttribute("name"), y => y.GetAttribute("value"));
-            formDatas["b.processCd"] = "N";
+			var formDatas = hiddenFilelds.ToDictionary(x => x.GetAttribute("name"), y => y.GetAttribute("value"));
+			formDatas["b.processCd"] = "N";
 
-            return await client.PostAsync("el25/pc/p03a.action", new FormUrlEncodedContent(formDatas));
-        }
+			return await client.PostAsync("el25/pc/p03a.action", new FormUrlEncodedContent(formDatas));
+		}
 
-        private static IEnumerable<Bookable> Parse(IHtmlDocument document)
-        {
-            foreach (IElement row in document.QuerySelectorAll("table.set")[1].QuerySelectorAll("tr.date"))
-            {
-                IHtmlCollection<IElement> elements = row.QuerySelectorAll("td");
+		private static IEnumerable<Bookable> Parse(IHtmlDocument document)
+		{
+			foreach (IElement row in document.QuerySelectorAll("table.set")[1].QuerySelectorAll("tr.date"))
+			{
+				IHtmlCollection<IElement> elements = row.QuerySelectorAll("td");
 
-                IElement dayInfo = elements.ElementAt(0).QuerySelector("font");
+				IElement dayInfo = elements.ElementAt(0).QuerySelector("font");
 
 				var target = new List<int>();
 
-                if (!targetColor.Contains(dayInfo?.GetAttribute("color")))
-                {
+				if (!targetColor.Contains(dayInfo?.GetAttribute("color")))
+				{
 					target = new List<int>() { 1, 2, 11, 12 };
 				}
 				else
@@ -136,70 +136,70 @@ namespace NotifyAvailableDate
 					target = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 				}
 
-                var day = dayInfo.Text().Replace("\n", "").Replace("\t", "");
-                for (int i = 0; i < elements.Count(); i++)
-                {
-                    IElement element = elements.ElementAt(i);
+				var day = dayInfo.Text().Replace("\n", "").Replace("\t", "");
+				for (int i = 0; i < elements.Count(); i++)
+				{
+					IElement element = elements.ElementAt(i);
 
-                    if (!target.Contains(i) || !element.ClassList.Contains("status1"))
-                    {
-                        continue;
-                    }
+					if (!target.Contains(i) || !element.ClassList.Contains("status1"))
+					{
+						continue;
+					}
 
-                    yield return new Bookable()
-                    {
-                        Day = day,
-                        Time = i
-                    };
-                }
-            }
-        }
+					yield return new Bookable()
+					{
+						Day = day,
+						Time = i
+					};
+				}
+			}
+		}
 
-        private static async Task Notice(List<Bookable> bookables)
-        {
-            var json = JsonConvert.SerializeObject(new
-            {
-                username = "日の丸自動車予約システム通知bot",
-                text = GetNoticeMessage(bookables)
-            });
+		private static async Task Notice(List<Bookable> bookables)
+		{
+			var json = JsonConvert.SerializeObject(new
+			{
+				username = "日の丸自動車予約システム通知bot",
+				text = GetNoticeMessage(bookables)
+			});
 
-            var request = new HttpRequestMessage(HttpMethod.Post, Configuration["Slack"]);
-            request.Headers.Add("ContentType", "application/json;charset=UTF-8");
-            request.Content = new StringContent(json);
+			var request = new HttpRequestMessage(HttpMethod.Post, Configuration["Slack"]);
+			request.Headers.Add("ContentType", "application/json;charset=UTF-8");
+			request.Content = new StringContent(json);
 
-            await client.SendAsync(request);
-        }
+			await client.SendAsync(request);
+		}
 
-        private static string GetNoticeMessage(List<Bookable> bookables)
-        {
-            return $@"
+		private static string GetNoticeMessage(List<Bookable> bookables)
+		{
+			return $@"
 以下の日程で予約が可能です。
 {string.Join(Environment.NewLine, bookables.Select(x => $"・{x.ToString()}"))}
 ";
-        }
+		}
 
-        private static void InitializeHttpClient()
-        {
-            client = new HttpClient(new HttpClientHandler()
-            {
-                CookieContainer = cookie,
-                UseCookies = true,
-            })
-            {
-                BaseAddress = new Uri("https://www.e-license.jp/")
-            };
-            client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36");
-        }
+		private static void InitializeHttpClient()
+		{
+			client = new HttpClient(new HttpClientHandler()
+			{
+				CookieContainer = cookie,
+				UseCookies = true,
+			})
+			{
+				BaseAddress = new Uri("https://www.e-license.jp/")
+			};
+			client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36");
+		}
 
-        private sealed class Bookable
-        {
-            public string Day { get; set; }
-            public int Time { get; set; }
+		private sealed class Bookable
+		{
+			public string Day { get; set; }
+			public int Time { get; set; }
 
-            public override string ToString()
-            {
-                return $"{Day} {Time}限";
-            }
-        }
-    }
+			public override string ToString()
+			{
+				return $"{Day} {Time}限";
+			}
+		}
+	}
 }
