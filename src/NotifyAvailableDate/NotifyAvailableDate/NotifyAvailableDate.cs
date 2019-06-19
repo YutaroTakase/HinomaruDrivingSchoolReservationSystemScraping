@@ -71,7 +71,7 @@ namespace NotifyAvailableDate
 
 				IHtmlDocument document = await parser.ParseDocumentAsync(stream);
 
-				IEnumerable<Bookable> result = Parse(document);
+				List<Bookable> result = Parse(document);
 
 				bookables.AddRange(result);
 
@@ -117,8 +117,10 @@ namespace NotifyAvailableDate
 			return await client.PostAsync("el25/pc/p03a.action", new FormUrlEncodedContent(formDatas));
 		}
 
-		private static IEnumerable<Bookable> Parse(IHtmlDocument document)
+		private static List<Bookable> Parse(IHtmlDocument document)
 		{
+			var result = new List<Bookable>();
+
 			foreach (IElement row in document.QuerySelectorAll("table.set")[1].QuerySelectorAll("tr.date"))
 			{
 				IHtmlCollection<IElement> elements = row.QuerySelectorAll("td");
@@ -146,13 +148,15 @@ namespace NotifyAvailableDate
 						continue;
 					}
 
-					yield return new Bookable()
+					result.Add(new Bookable()
 					{
 						Day = day,
 						Time = i
-					};
+					});
 				}
 			}
+
+			return result;
 		}
 
 		private static async Task Notice(List<Bookable> bookables)
