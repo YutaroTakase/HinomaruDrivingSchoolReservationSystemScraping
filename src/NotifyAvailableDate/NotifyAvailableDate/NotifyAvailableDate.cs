@@ -22,7 +22,6 @@ namespace NotifyAvailableDate
         private static readonly CookieContainer cookie = new CookieContainer();
         private static readonly HtmlParser parser = new HtmlParser();
         private static readonly List<string> targetColor = new List<string>() { "#FF0000", "#0000FF" };
-        private static readonly List<int> targetTimeZoneIndex = new List<int>() { 6, 7, 8, 9, 10, 11, 12 };
 
         private static IConfigurationRoot Configuration { get; }
 
@@ -126,18 +125,23 @@ namespace NotifyAvailableDate
 
                 IElement dayInfo = elements.ElementAt(0).QuerySelector("font");
 
+				var target = new List<int>();
+
                 if (!targetColor.Contains(dayInfo?.GetAttribute("color")))
                 {
-                    continue;
-                }
+					target = new List<int>() { 1, 2, 11, 12 };
+				}
+				else
+				{
+					target = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+				}
 
                 var day = dayInfo.Text().Replace("\n", "").Replace("\t", "");
                 for (int i = 0; i < elements.Count(); i++)
                 {
                     IElement element = elements.ElementAt(i);
 
-
-                    if (!targetTimeZoneIndex.Contains(i) || !element.ClassList.Contains("status1"))
+                    if (!target.Contains(i) || !element.ClassList.Contains("status1"))
                     {
                         continue;
                     }
