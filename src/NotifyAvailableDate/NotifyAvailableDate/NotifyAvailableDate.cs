@@ -22,6 +22,7 @@ namespace NotifyAvailableDate
 		private static readonly CookieContainer cookie = new CookieContainer();
 		private static readonly HtmlParser parser = new HtmlParser();
 		private static readonly List<string> holidayColor = new List<string>() { "#FF0000", "#0000FF" };
+		private static readonly List<int> targetTimeZoneIndex = new List<int>() { 6, 7, 8, 9, 10, 11, 12 };
 
 		private static IConfigurationRoot Configuration { get; }
 
@@ -71,7 +72,7 @@ namespace NotifyAvailableDate
 
 				IHtmlDocument document = await parser.ParseDocumentAsync(stream);
 
-				List<Bookable> result = Parse(document);
+				var result = Parse(document);
 
 				bookables.AddRange(result);
 
@@ -117,49 +118,36 @@ namespace NotifyAvailableDate
 			return await client.PostAsync("el25/pc/p03a.action", new FormUrlEncodedContent(formDatas));
 		}
 
-		private static List<Bookable> Parse(IHtmlDocument document)
+		private static IEnumerable<Bookable> Parse(IHtmlDocument document)
 		{
-			var result = new List<Bookable>();
-
-			List<int> GetTargetIndex(bool isHoliday)
-			{
-				if (isHoliday)
-				{
-					return new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-				}
-				else
-				{
-					return new List<int>() { 1, 2, 11, 12 };
-				}
-			}
-
 			foreach (IElement row in document.QuerySelectorAll("table.set")[1].QuerySelectorAll("tr.date"))
 			{
 				IHtmlCollection<IElement> elements = row.QuerySelectorAll("td");
 
 				IElement dayInfo = elements.ElementAt(0).QuerySelector("font");
 
-				var target = GetTargetIndex(holidayColor.Contains(dayInfo?.GetAttribute("color")));
+				if (!holidayColor.Contains(dayInfo?.GetAttribute("color")))
+				{
+					continue;
+				}
 
 				var day = dayInfo.Text().Replace("\n", "").Replace("\t", "");
 				for (int i = 0; i < elements.Count(); i++)
 				{
 					IElement element = elements.ElementAt(i);
 
-					if (!target.Contains(i) || !element.ClassList.Contains("status1"))
+					if (!targetTimeZoneIndex.Contains(i) || !element.ClassList.Contains("status1"))
 					{
 						continue;
 					}
 
-					result.Add(new Bookable()
+					yield return new Bookable()
 					{
 						Day = day,
 						Time = i
-					});
+					};
 				}
 			}
-
-			return result;
 		}
 
 		private static async Task Notice(List<Bookable> bookables)
