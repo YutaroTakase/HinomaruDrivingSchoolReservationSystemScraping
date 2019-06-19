@@ -23,6 +23,7 @@ namespace NotifyAvailableDate
 		private static readonly HtmlParser parser = new HtmlParser();
 		private static readonly List<string> holidayColor = new List<string>() { "#FF0000", "#0000FF" };
 		private static readonly List<int> holidayTargetTimeZoneIndex = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+		private static readonly List<int> targetTimeZoneIndex = new List<int>() { 1, 2, 11, 12 };
 
 		private static IConfigurationRoot Configuration { get; }
 
@@ -126,9 +127,15 @@ namespace NotifyAvailableDate
 
 				IElement dayInfo = elements.ElementAt(0).QuerySelector("font");
 
+				List<int> target = null;
+
 				if (!holidayColor.Contains(dayInfo?.GetAttribute("color")))
 				{
-					continue;
+					target = targetTimeZoneIndex;
+				}
+				else
+				{
+					target = holidayTargetTimeZoneIndex;
 				}
 
 				var day = dayInfo.Text().Replace("\n", "").Replace("\t", "");
