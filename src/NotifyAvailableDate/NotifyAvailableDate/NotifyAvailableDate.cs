@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp.Dom;
@@ -125,11 +126,11 @@ namespace NotifyAvailableDate
 			{
 				IHtmlCollection<IElement> elements = row.QuerySelectorAll("td");
 
-				IElement dayInfo = elements.ElementAt(0).QuerySelector("font");
+				IElement dayInfo = elements.ElementAt(0);
 
 				List<int> target = null;
 
-				if (!holidayColor.Contains(dayInfo?.GetAttribute("color")))
+				if (!holidayColor.Contains(dayInfo.QuerySelector("font")?.GetAttribute("color")))
 				{
 					target = targetTimeZoneIndex;
 				}
@@ -138,12 +139,12 @@ namespace NotifyAvailableDate
 					target = holidayTargetTimeZoneIndex;
 				}
 
-				var day = dayInfo.Text().Replace("\n", "").Replace("\t", "");
+				var day = RemoveHtmlTags(dayInfo.Text()).Replace("\n", "").Replace("\t", "");
 				for (int i = 0; i < elements.Count(); i++)
 				{
 					IElement element = elements.ElementAt(i);
 
-					if (!holidayTargetTimeZoneIndex.Contains(i) || !element.ClassList.Contains("status1"))
+					if (!target.Contains(i) || !element.ClassList.Contains("status1"))
 					{
 						continue;
 					}
@@ -191,6 +192,11 @@ namespace NotifyAvailableDate
 				BaseAddress = new Uri("https://www.e-license.jp/")
 			};
 			client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36");
+		}
+
+		private static string RemoveHtmlTags(string s)
+		{
+			return new Regex("<(\"[^\"]*\"|'[^']*'|[^'\">])*>").Replace(s, "");
 		}
 
 		private sealed class Bookable
