@@ -21,7 +21,7 @@ namespace NotifyAvailableDate
 		private static HttpClient client;
 		private static readonly CookieContainer cookie = new CookieContainer();
 		private static readonly HtmlParser parser = new HtmlParser();
-		private static readonly List<string> targetColor = new List<string>() { "#FF0000", "#0000FF" };
+		private static readonly List<string> holidayColor = new List<string>() { "#FF0000", "#0000FF" };
 
 		private static IConfigurationRoot Configuration { get; }
 
@@ -121,22 +121,25 @@ namespace NotifyAvailableDate
 		{
 			var result = new List<Bookable>();
 
+			List<int> GetTargetIndex(bool isHoliday)
+			{
+				if (isHoliday)
+				{
+					return new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+				}
+				else
+				{
+					return new List<int>() { 1, 2, 11, 12 };
+				}
+			}
+
 			foreach (IElement row in document.QuerySelectorAll("table.set")[1].QuerySelectorAll("tr.date"))
 			{
 				IHtmlCollection<IElement> elements = row.QuerySelectorAll("td");
 
 				IElement dayInfo = elements.ElementAt(0).QuerySelector("font");
 
-				var target = new List<int>();
-
-				if (!targetColor.Contains(dayInfo?.GetAttribute("color")))
-				{
-					target = new List<int>() { 1, 2, 11, 12 };
-				}
-				else
-				{
-					target = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-				}
+				var target = GetTargetIndex(holidayColor.Contains(dayInfo?.GetAttribute("color")));
 
 				var day = dayInfo.Text().Replace("\n", "").Replace("\t", "");
 				for (int i = 0; i < elements.Count(); i++)
