@@ -47,6 +47,8 @@ namespace NotifyAvailableDate
 				InitializeHttpClient();
 
 				Execute().Wait();
+
+				log.LogInformation("function completed");
 			}
 			catch (Exception ex)
 			{
